@@ -10,11 +10,15 @@ async function bootstrap() {
     const app = express();
     app.use(express.json());
 
-    const repo = new DeliveryQueueRepository();
-    const useCase = new PublishDeliveryAppointment(repo);
-    const controller = new PublishController(useCase);
+    const deliveryQueueRepository = new DeliveryQueueRepository();
 
-    app.post("/publish", (req, res) => controller.handle(req, res));
+    const publishDeliveryAppointmentUsecase = new PublishDeliveryAppointment(
+        deliveryQueueRepository
+    );
+
+    const publishController = new PublishController(publishDeliveryAppointmentUsecase);
+
+    app.post("/publish", (req, res) => publishController.handle(req, res));
 
     app.listen(3000, () => console.log("Queue service listening on port 3000"));
 }

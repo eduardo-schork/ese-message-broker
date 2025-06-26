@@ -1,30 +1,46 @@
 import axios from "axios";
-import { v4 as uuidv4 } from "uuid";
 
-const API_URL = "http://localhost:3000/publish";
-const TOTAL_MESSAGES = 50;
+const processIdArg = process.argv.find((arg) => arg.startsWith("--process="));
+const deliveryProcessId = processIdArg ? parseInt(processIdArg.split("=")[1], 10) : 1;
+
+const API_URL = "http://localhost:8080/publish-appointment";
+const TOTAL_MESSAGES = 20;
 
 function getRandomFutureDate() {
     const now = new Date();
-    now.setDate(now.getDate() + Math.floor(Math.random() * 30)); // até 30 dias no futuro
+    now.setDate(now.getDate() + Math.floor(Math.random() * 30));
     return now.toISOString();
 }
 
-function generateMockData() {
+function getRandomAddressId() {
+    return Math.floor(Math.random() * 20) + 1;
+}
+
+function getStatusIdByIndex(index: number): number {
+    if (index === 0) return 4;
+    if (index === TOTAL_MESSAGES - 1) return 6;
+    return 5;
+}
+
+function generateMockData(index: number) {
     return {
         scheduledTo: getRandomFutureDate(),
-        deliveryProcessId: uuidv4(),
-        addressId: uuidv4(),
+        deliveryProcessId: deliveryProcessId,
+        addressId: getRandomAddressId(),
+        statusId: getStatusIdByIndex(index),
     };
 }
 
 async function sendMessages() {
-    console.log(`🔄 Enviando ${TOTAL_MESSAGES} mensagens para a fila...`);
+    console.log(
+        `🔄 Enviando ${TOTAL_MESSAGES} mensagens para a fila (processId=${deliveryProcessId})...`
+    );
     for (let i = 0; i < TOTAL_MESSAGES; i++) {
-        const data = generateMockData();
+        const data = generateMockData(i);
         try {
             await axios.post(API_URL, data);
-            console.log(`✅ Mensagem ${i + 1} enviada`);
+            console.log(`✅ Mensagem ${i + 1} enviada - StatusId: ${data.statusId}`);
+            await new Promise((resolve) => setTimeout(resolve, 500));
         } catch (error: any) {
             console.error(`❌ Erro ao enviar mensagem ${i + 1}`, error.message);
         }
